@@ -374,7 +374,7 @@ int GetOpposingTeam(int team)
 
 bool IsCurrentMapCtg()
 {
-    int ent = FindEntityByClassname(g_iHighestClientIndex, "neo_game_config");
+    int ent = FindEntityByClassname(-1, "neo_game_config");
     if (!IsValidEntity(ent)) {
         return false;
     }
