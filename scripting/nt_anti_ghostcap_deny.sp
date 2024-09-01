@@ -25,7 +25,7 @@
 #define LOG_PATH "addons/sourcemod/logs/nt_anti_ghostcap_deny.log"
 #endif
 
-DataPack dp_lateXpAwards = null;
+DataPack g_dpLateXpAwards = null;
 
 bool g_bIsCurrentMapCtg, g_bLate;
 int g_iHighestClientIndex = 0;
@@ -82,8 +82,8 @@ public void OnMapStart()
 public void OnMapEnd()
 {
     // Clear any pending XP awards from the final round of a map.
-    if (dp_lateXpAwards != null) {
-        delete dp_lateXpAwards;
+    if (g_dpLateXpAwards != null) {
+        delete g_dpLateXpAwards;
     }
 }
 
@@ -228,8 +228,8 @@ void AwardGhostCapXPToTeam(int team)
     int award_xp_total = 0;
     int num_award_clients = 0;
 
-    if (dp_lateXpAwards != null) {
-        delete dp_lateXpAwards;
+    if (g_dpLateXpAwards != null) {
+        delete g_dpLateXpAwards;
         LogError("Had dirty dp handle on AwardGhostCapXPToTeam; this should never happen.");
     }
 
@@ -249,12 +249,12 @@ void AwardGhostCapXPToTeam(int team)
         int award_xp = next_xp - client_prev_xp;
 
         if (award_xp > 0) {
-            if (dp_lateXpAwards == null) {
-                dp_lateXpAwards = new DataPack();
+            if (g_dpLateXpAwards == null) {
+                g_dpLateXpAwards = new DataPack();
             }
 
-            dp_lateXpAwards.WriteCell(GetClientUserId(client));
-            dp_lateXpAwards.WriteCell(client_prev_xp);
+            g_dpLateXpAwards.WriteCell(GetClientUserId(client));
+            g_dpLateXpAwards.WriteCell(client_prev_xp);
 
             award_xp_total += award_xp;
             ++num_award_clients;
@@ -262,8 +262,8 @@ void AwardGhostCapXPToTeam(int team)
     }
 
     if (award_xp_total == 0) {
-        if (dp_lateXpAwards != null) {
-            SetFailState("DataPack handle dp_lateXpAwards is leaking");
+        if (g_dpLateXpAwards != null) {
+            SetFailState("DataPack handle g_dpLateXpAwards is leaking");
         }
         return;
     }
@@ -304,7 +304,7 @@ void AwardGhostCapXPToTeam(int team)
 public Action Timer_AwardXP(Handle timer)
 {
     // This can happen if we change levels before this callback fires.
-    if (dp_lateXpAwards == null) {
+    if (g_dpLateXpAwards == null) {
         return Plugin_Stop;
     }
 
@@ -315,19 +315,19 @@ public Action Timer_AwardXP(Handle timer)
 
     // Actually award the XP only if there hasn't been a reset.
     if (!game_has_been_reset) {
-        dp_lateXpAwards.Reset();
+        g_dpLateXpAwards.Reset();
         char award_message[PLUGIN_TAG_STRLEN + 26 + 1];
 
 // This addresses a bug in specific 1.8 branch releases
 // where the function documentation didn't match implementation.
 #if SOURCEMOD_V_MAJOR == 1 && SOURCEMOD_V_MINOR == 8 && SOURCEMOD_V_REV < 5992 && SOURCEMOD_V_REV >= 5535
-        while (dp_lateXpAwards.IsReadable())
+        while (g_dpLateXpAwards.IsReadable())
 #else
-        while (dp_lateXpAwards.IsReadable(4))
+        while (g_dpLateXpAwards.IsReadable(4))
 #endif
         {
-            int client = GetClientOfUserId(dp_lateXpAwards.ReadCell());
-            int client_prev_xp = dp_lateXpAwards.ReadCell();
+            int client = GetClientOfUserId(g_dpLateXpAwards.ReadCell());
+            int client_prev_xp = g_dpLateXpAwards.ReadCell();
 
             if (client == 0 || !IsClientInGame(client)) {
                 continue;
@@ -348,7 +348,7 @@ public Action Timer_AwardXP(Handle timer)
                 (next_xp - current_xp)
                 ) == 0)
             {
-                delete dp_lateXpAwards;
+                delete g_dpLateXpAwards;
                 ThrowError("Failed to format award message");
             }
             PrintToChat(client, award_message);
@@ -359,7 +359,7 @@ public Action Timer_AwardXP(Handle timer)
         }
     }
 
-    delete dp_lateXpAwards;
+    delete g_dpLateXpAwards;
 
     return Plugin_Stop;
 }
