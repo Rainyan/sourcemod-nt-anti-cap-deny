@@ -126,8 +126,7 @@ public void OnPlayerDeath(Event event, const char[] name, bool dontBroadcast)
 
 bool IsGameRoundActive()
 {
-    // 1 means warmup, 2 means round is "live" in terms of gamerules
-    return GameRules_GetProp("m_iGameState") == 2;
+    return GameRules_GetProp("m_iGameState") == GAMESTATE_ROUND_ACTIVE;
 }
 
 int GetNumLivingPlayersInTeam(int team, int ignore_client = 0)
