@@ -8,7 +8,7 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-#define PLUGIN_VERSION "1.3.2"
+#define PLUGIN_VERSION "2.0.0"
 
 #if(0)
 // If defined, log some debug to LOG_PATH.
