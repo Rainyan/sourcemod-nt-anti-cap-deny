@@ -82,9 +82,7 @@ public void OnMapStart()
 public void OnMapEnd()
 {
     // Clear any pending XP awards from the final round of a map.
-    if (g_dpLateXpAwards != null) {
-        delete g_dpLateXpAwards;
-    }
+    delete g_dpLateXpAwards;
 }
 
 public void OnClientConnected(int client)
