@@ -10,15 +10,6 @@
 
 #define PLUGIN_VERSION "1.3.1"
 
-// Remember to update PLUGIN_TAG_STRLEN if you change this tag.
-#define PLUGIN_TAG "[ANTI CAP-DENY]"
-// Length of the PLUGIN_TAG text.
-#define PLUGIN_TAG_STRLEN 15
-
-// Sound effect to use on the deny event.
-// Can be turned on/off with a cvar.
-#define SFX_NOTIFY "player/CPcaptured.wav"
-
 #if(0)
 // If defined, log some debug to LOG_PATH.
 #define LOG_DEBUG
@@ -28,6 +19,9 @@
 ConVar g_hCvar_UseSoundFx = null;
 DataPack g_dpLateXpAwards = null;
 
+char g_szPluginTag[] = "[ANTI CAP-DENY]";
+// Sound effect to use on the deny event. Can be turned on/off with a cvar.
+char g_szSfxNotify[] = "player/CPcaptured.wav";
 bool g_bIsCurrentMapCtg, g_bLate;
 int g_iHighestClientIndex;
 
@@ -71,8 +65,8 @@ public void OnPluginStart()
 
 public void OnMapStart()
 {
-    if (!PrecacheSound(SFX_NOTIFY)) {
-        SetFailState("Failed to precache sound: \"%s\"", SFX_NOTIFY);
+    if (!PrecacheSound(g_szSfxNotify)) {
+        SetFailState("Failed to precache sound: \"%s\"", g_szSfxNotify);
     }
 
     g_bIsCurrentMapCtg = IsCurrentMapCtg();
@@ -266,20 +260,20 @@ void AwardGhostCapXPToTeam(int team)
     }
 
     if (g_hCvar_UseSoundFx.BoolValue) {
-        EmitSoundToAll(SFX_NOTIFY);
+        EmitSoundToAll(g_szSfxNotify);
     }
 
-    char msg1[PLUGIN_TAG_STRLEN + 100 + 1];
-    char msg2[PLUGIN_TAG_STRLEN + 40 + 1];
+    char msg1[sizeof(g_szPluginTag)-1 + 100 + 1];
+    char msg2[sizeof(g_szPluginTag)-1 + 40 + 1];
 
     Format(msg1, sizeof(msg1),
         "%s Last player of %s suicided vs. ghost carrier; awarding capture to team %s.",
-        PLUGIN_TAG,
+        g_szPluginTag,
         (team == TEAM_JINRAI ? "NSF" : "Jinrai"),
         (team == TEAM_JINRAI ? "Jinrai" : "NSF"));
 
     Format(msg2, sizeof(msg2), "%s Awarding capture rank-up to %d player%s",
-        PLUGIN_TAG, num_award_clients,
+        g_szPluginTag, num_award_clients,
         (num_award_clients == 1 ? "." : "s.")); // -s plural postfix
 
     PrintToChatAll(msg1);
@@ -313,7 +307,7 @@ public Action Timer_AwardXP(Handle timer)
     // Actually award the XP only if there hasn't been a reset.
     if (!game_has_been_reset) {
         g_dpLateXpAwards.Reset();
-        char award_message[PLUGIN_TAG_STRLEN + 26 + 1];
+        char award_message[sizeof(g_szPluginTag)-1 + 26 + 1];
 
 // This addresses a bug in specific 1.8 branch releases
 // where the function documentation didn't match implementation.
@@ -341,7 +335,7 @@ public Action Timer_AwardXP(Handle timer)
 
             // Note: remember to update alloc size if you update the message format below!
             if (Format(award_message, sizeof(award_message), "%s You received %d extra XP.",
-                PLUGIN_TAG,
+                g_szPluginTag,
                 (next_xp - current_xp)
                 ) == 0)
             {
