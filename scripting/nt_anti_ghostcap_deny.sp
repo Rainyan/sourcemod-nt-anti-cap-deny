@@ -24,7 +24,8 @@
 
 DataPack dp_lateXpAwards = null;
 
-bool b_IsCurrentMapCtg = false;
+bool g_bIsCurrentMapCtg, g_bLate;
+int g_iHighestClientIndex = 0;
 
 ConVar g_hCvar_UseSoundFx = null;
 
@@ -38,8 +39,23 @@ cap happened.",
     url         = "https://github.com/Rainyan/sourcemod-nt-anti-cap-deny"
 };
 
+public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
+{
+    g_bLate = late;
+    return APLRes_Success;
+}
+
 public void OnPluginStart()
 {
+    if (g_bLate) {
+        for (int client = MaxClients; client > 0; --client) {
+            if (!IsClientConnected(client)) {
+                break;
+            }
+            g_iHighestClientIndex = client;
+        }
+    }
+
     if (!HookEventEx("player_death", OnPlayerDeath, EventHookMode_Pre)) {
         SetFailState("Failed to hook event player_death");
     }
@@ -57,7 +73,7 @@ public void OnMapStart()
         SetFailState("Failed to precache sound: \"%s\"", SFX_NOTIFY);
     }
 
-    b_IsCurrentMapCtg = IsCurrentMapCtg();
+    g_bIsCurrentMapCtg = IsCurrentMapCtg();
 }
 
 public void OnMapEnd()
@@ -65,6 +81,20 @@ public void OnMapEnd()
     // Clear any pending XP awards from the final round of a map.
     if (dp_lateXpAwards != null) {
         delete dp_lateXpAwards;
+    }
+}
+
+public void OnClientConnected(int client)
+{
+    if (client > g_iHighestClientIndex) {
+        g_iHighestClientIndex = client;
+    }
+}
+
+public void OnClientDisconnect_Post(int client)
+{
+    if (client == g_iHighestClientIndex) {
+        --g_iHighestClientIndex;
     }
 }
 
@@ -79,7 +109,7 @@ public void OnClientDisconnect(int client)
 void CheckForAntiCap(int victim_userid, int attacker_userid)
 {
     // Don't need to do anything if this isn't a CTG map.
-    if (!b_IsCurrentMapCtg) {
+    if (!g_bIsCurrentMapCtg) {
         return;
     }
     // Don't need to do anything if the round isn't live.
@@ -350,21 +380,12 @@ int GetOpposingTeam(int team)
 
 bool IsCurrentMapCtg()
 {
-    char entName[15 + 1]; // strlen "neo_game_config" + '\0' = 16
-    for (int ent = MaxClients + 1; ent <= GetMaxEntities(); ++ent) {
-        if (!IsValidEntity(ent)) {
-            continue;
-        }
-        if (!GetEntityClassname(ent, entName, sizeof(entName))) {
-            continue;
-        }
-        if (StrEqual(entName, "neo_game_config")) {
-            // m_GameType --> 0 : "TDM", 1 : "CTG", 2 : "VIP"
-            bool is_ctg = (GetEntProp(ent, Prop_Send, "m_GameType") == 1);
-            return is_ctg;
-        }
+    int ent = FindEntityByClassname(g_iHighestClientIndex, "neo_game_config");
+    if (!IsValidEntity(ent)) {
+        return false;
     }
-    return false;
+#define GAMETYPE_CTG 1
+    return GetEntProp(ent, Prop_Send, "m_GameType") == GAMETYPE_CTG;
 }
 
 #if defined(LOG_DEBUG)
