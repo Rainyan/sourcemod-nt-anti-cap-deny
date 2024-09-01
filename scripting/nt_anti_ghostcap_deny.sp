@@ -5,6 +5,9 @@
 
 #include <neotokyo>
 
+#pragma semicolon 1
+#pragma newdecls required
+
 #define PLUGIN_VERSION "1.3.1"
 
 // Remember to update PLUGIN_TAG_STRLEN if you change this tag.
@@ -391,7 +394,7 @@ bool IsCurrentMapCtg()
 #if defined(LOG_DEBUG)
 void PrintToDebug(const char [] msg, any ...)
 {
-    decl String:buffer[256];
+    char buffer[256];
     int bytes = VFormat(buffer, sizeof(buffer), msg, 2);
     if (bytes <= 0) {
         ThrowError("VFormat failed on: %s", msg);
