@@ -22,8 +22,6 @@ DataPack g_dpLateXpAwards = null;
 char g_szPluginTag[] = "[ANTI CAP-DENY]";
 // Sound effect to use on the deny event. Can be turned on/off with a cvar.
 char g_szSfxNotify[] = "player/CPcaptured.wav";
-bool g_bIsCurrentMapCtg, g_bLate;
-int g_iHighestClientIndex;
 
 public Plugin myinfo = {
     name        = "NEOTOKYO° Anti Ghost Cap Deny",
@@ -35,23 +33,8 @@ cap happened.",
     url         = "https://github.com/Rainyan/sourcemod-nt-anti-cap-deny"
 };
 
-public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
-{
-    g_bLate = late;
-    return APLRes_Success;
-}
-
 public void OnPluginStart()
 {
-    if (g_bLate) {
-        for (int client = MaxClients; client > 0; --client) {
-            if (!IsClientConnected(client)) {
-                break;
-            }
-            g_iHighestClientIndex = client;
-        }
-    }
-
     if (!HookEventEx("player_death", OnPlayerDeath, EventHookMode_Pre)) {
         SetFailState("Failed to hook event player_death");
     }
@@ -65,31 +48,20 @@ public void OnPluginStart()
 
 public void OnMapStart()
 {
+    if (!IsCurrentMapCtg()) {
+        UnloadSelf();
+        return;
+    }
+
     if (!PrecacheSound(g_szSfxNotify)) {
         SetFailState("Failed to precache sound: \"%s\"", g_szSfxNotify);
     }
-
-    g_bIsCurrentMapCtg = IsCurrentMapCtg();
 }
 
 public void OnMapEnd()
 {
     // Clear any pending XP awards from the final round of a map.
     delete g_dpLateXpAwards;
-}
-
-public void OnClientConnected(int client)
-{
-    if (client > g_iHighestClientIndex) {
-        g_iHighestClientIndex = client;
-    }
-}
-
-public void OnClientDisconnect_Post(int client)
-{
-    if (client == g_iHighestClientIndex) {
-        --g_iHighestClientIndex;
-    }
 }
 
 public void OnClientDisconnect(int client)
@@ -102,12 +74,8 @@ public void OnClientDisconnect(int client)
 
 void CheckForAntiCap(int victim_userid, int attacker_userid)
 {
-    // Don't need to do anything if this isn't a CTG map.
-    if (!g_bIsCurrentMapCtg) {
-        return;
-    }
     // Don't need to do anything if the round isn't live.
-    else if (!IsGameRoundActive()) {
+    if (!IsGameRoundActive()) {
         return;
     }
 
@@ -394,6 +362,13 @@ void PrintToDebug(const char [] msg, any ...)
     LogToFile(LOG_PATH, buffer);
 }
 #endif
+
+void UnloadSelf()
+{
+    char filename[PLATFORM_MAX_PATH];
+    GetPluginFilename(INVALID_HANDLE, filename, sizeof(filename));
+    ServerCommand("sm plugins unload \"%s\"", filename);
+}
 
 // Backported from SourceMod/SourcePawn SDK for SM < 1.9 compatibility.
 // Used here under GPLv3 license: https://www.sourcemod.net/license.php
