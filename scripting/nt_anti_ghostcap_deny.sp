@@ -25,12 +25,11 @@
 #define LOG_PATH "addons/sourcemod/logs/nt_anti_ghostcap_deny.log"
 #endif
 
+ConVar g_hCvar_UseSoundFx = null;
 DataPack g_dpLateXpAwards = null;
 
 bool g_bIsCurrentMapCtg, g_bLate;
-int g_iHighestClientIndex = 0;
-
-ConVar g_hCvar_UseSoundFx = null;
+int g_iHighestClientIndex;
 
 public Plugin myinfo = {
     name        = "NEOTOKYO° Anti Ghost Cap Deny",
